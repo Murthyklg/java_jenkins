@@ -1,9 +1,5 @@
 pipeline {
     agent any
-    tools{
-maven 'maven3.6.1'
-}
-
     stages {
         stage('git clone') {
             steps {
@@ -15,5 +11,26 @@ maven 'maven3.6.1'
                sh 'mvn clean package'
             }
         }
-    }
+        stage('create the docker image') {
+            steps {
+            sh 'sudo docker build -t saidevops16/apacheapp:latest .'
+            }
+        }
+           stage('docker push ') {
+     steps {
+     withCredentials([string(credentialsId: 'DOCKER_HUB', variable: 'DOCKER_HUB_PASS_CODE')])  {
+    // some block
+        sh "sudo docker login -u saidevops16 -p $DOCKER_HUB_PASS_CODE"
+        }
+        sh "sudo docker push saidevops16/apacheapp:latest"
+        }
+        } 
+           stage('Deploy to docker Env') {
+    steps {
+    sh "sudo docker rm -f app3" 
+    sh "sudo docker run -itd --name app3 -p 9000:8080 saidevops16/apacheapp:latest" 
+
 }
+}
+    } 
+    }
