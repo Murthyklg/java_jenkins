@@ -1,0 +1,48 @@
+pipeline {
+    agent any
+    stages {
+        stage('git clone') {
+            steps {
+               git 'https://github.com/Kumarbgm16/java-azure-project.git'
+            }
+        }
+        stage('maven package') {
+            steps {
+               sh 'mvn clean package'
+            }
+        }
+        stage('create the docker image') {
+            steps {
+            sh 'sudo docker build -t saidevops16/apacheb62:latest .'
+            }
+        }
+         stage('docker push ') {
+     steps {
+     withCredentials([string(credentialsId: 'DOCKER_HUB_PWD1', variable: 'DOCKER_HUB_PASS_CODE')])  {
+    // some block
+        sh "sudo docker login -u saidevops16 -p $DOCKER_HUB_PASS_CODE"
+        }
+        sh "sudo docker push saidevops16/apacheb62:latest"
+        }
+         }
+        
+       stage('Deploy to Kube Env') {
+    steps {
+   withKubeConfig(caCertificate: '', clusterName: 'my-eks22.ap-south-1.eksctl.io', contextName: '', credentialsId: 'k8-sec', namespace: 'default', restrictKubeConfigAccess: false, serverUrl: 'https://090D55DB11B224B9847AAE1D4E910A6B.gr7.ap-south-1.eks.amazonaws.com') {
+     script {
+Boolean userInput = input(id: 'Proceed1', message: 'Promote build?', parameters: [[$class: 'BooleanParameterDefinition', defaultValue: true, description: '', name: 'Please confirm you agree with this']])
+echo 'userInput: ' + userInput
+if(userInput == true) {
+// do action
+sh "kubectl apply -f k8-dep-svc.yml"   
+} else 
+{
+// not do action
+echo "Action was aborted."
+}
+}
+}
+}
+}
+}
+}
