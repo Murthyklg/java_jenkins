@@ -1,0 +1,72 @@
+pipeline {
+    agent any
+    stages {
+        stage('git clone') {
+            steps {
+               git 'https://github.com/Kumarbgm16/java-azure-project.git'
+            }
+        }
+        stage('maven package') {
+            steps {
+               sh 'mvn clean package'
+            }
+        }
+        stage('create the docker image') {
+            steps {
+            sh 'sudo docker build -t saidevops16/apacheb62:latest .'
+            }
+        }
+         stage('docker push ') {
+     steps {
+     withCredentials([string(credentialsId: 'DOCKER_HUB_PWD1', variable: 'DOCKER_HUB_PASS_CODE')])  {
+    // some block
+        sh "sudo docker login -u saidevops16 -p $DOCKER_HUB_PASS_CODE"
+        }
+        sh "sudo docker push saidevops16/apacheb62:latest"
+        }
+        } 
+       stage('Deploy to Kube Env') {
+    steps {
+    withKubeConfig(caCertificate: '', clusterName: 'cluster.com', contextName: '', credentialsId: 'k8-cred', namespace: 'default', restrictKubeConfigAccess: false, serverUrl: 'https://api.cluster.com') {
+     sh "kubectl apply -f k8-dep-svc.yml"   
+}
+
+}
+}
+        
+    }
+      post {
+    always {
+        script {
+            def jobName = env.JOB_NAME
+            def buildNumber = env.BUILD_NUMBER
+            def pipelineStatus = currentBuild.result ?: 'UNKNOWN'
+            def bannerColor = pipelineStatus.toUpperCase() == 'SUCCESS' ? 'green' : 'red'
+
+            def body = """
+                <html>
+                <body>
+                <div style="border: 4px solid ${bannerColor}; padding: 10px;">
+                <h2>${jobName} - Build ${buildNumber}</h2>
+                <div style="background-color: ${bannerColor}; padding: 10px;">
+                <h3 style="color: white;">Pipeline Status: ${pipelineStatus.toUpperCase()}</h3>
+                </div>
+                <p>Check the <a href="${BUILD_URL}">console output</a>.</p>
+                </div>
+                </body>
+                </html>
+            """
+
+            emailext (
+                subject: "${jobName} - Build ${buildNumber} - ${pipelineStatus.toUpperCase()}",
+                body: body,
+                to: 'devopsazure222@gmail.com',
+                from: 'learndevops16@gmail.com',
+                replyTo: 'learndevops16@gmail.com',
+                mimeType: 'text/html',
+               
+            )
+        }
+    }
+}
+}
