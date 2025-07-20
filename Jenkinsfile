@@ -1,36 +1,51 @@
 pipeline {
     agent any
+
     stages {
         stage('git clone') {
             steps {
-               git 'https://github.com/Kumarbgm16/java-azure-project.git'
+             git 'https://github.com/Kumarbgm16/java-azure-project.git'
             }
         }
-        stage('maven package') {
+    stage('maven') {
             steps {
-               sh 'mvn clean package'
+             sh "mvn clean package"
             }
         }
-        stage('create the docker image') {
-            steps {
-            sh 'sudo docker build -t saidevops16/apacheapp:latest .'
-            }
-        }
-           stage('docker push ') {
-     steps {
-     withCredentials([string(credentialsId: 'DOCKER_HUB', variable: 'DOCKER_HUB_PASS_CODE')])  {
-    // some block
-        sh "sudo docker login -u saidevops16 -p $DOCKER_HUB_PASS_CODE"
-        }
-        sh "sudo docker push saidevops16/apacheapp:latest"
-        }
-        } 
-           stage('Deploy to docker Env') {
-    steps {
-    sh "sudo docker rm -f app3" 
-    sh "sudo docker run -itd --name app3 -p 9000:8080 saidevops16/apacheapp:latest" 
-
-}
-}
-    } 
     }
+    post {
+        always {
+            script {
+                def jobName = env.JOB_NAME
+                def buildNumber = env.BUILD_NUMBER
+                def buildUrl = env.BUILD_URL
+                def pipelineStatus = currentBuild.currentResult
+                def bannerColor = pipelineStatus == 'SUCCESS' ? 'green' : 'red'
+
+                def body = """
+                    <html>
+                    <body>
+                    <div style="border: 4px solid ${bannerColor}; padding: 10px;">
+                        <h2>${jobName} - Build #${buildNumber}</h2>
+                        <div style="background-color: ${bannerColor}; padding: 10px;">
+                            <h3 style="color: white;">Pipeline Status: ${pipelineStatus}</h3>
+                        </div>
+                        <p>Check the <a href="${buildUrl}">console output</a>.</p>
+                    </div>
+                    </body>
+                    </html>
+                """
+
+                echo "Sending email..."
+                emailext (
+                    subject: "${jobName} - Build #${buildNumber} - ${pipelineStatus}",
+                    body: body,
+                    to: 'devopsazure222@gmail.com',
+                    from: 'learndevops16@gmail.com',
+                    replyTo: 'learndevops16@gmail.com',
+                    mimeType: 'text/html'
+                )
+            }
+        }
+    }
+}
