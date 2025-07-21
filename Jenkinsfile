@@ -40,9 +40,9 @@ pipeline {
                 emailext (
                     subject: "${jobName} - Build #${buildNumber} - ${pipelineStatus}",
                     body: body,
-                    to: 'devopsazure222@gmail.com',
-                    from: 'learndevops16@gmail.com',
-                    replyTo: 'learndevops16@gmail.com',
+                    to: 'murthyklg2711@gmail.com',
+                    from: 'klgmurthy4797@gmail.com',
+                    replyTo: 'klgmurthy4797@gmail.com',
                     mimeType: 'text/html'
                 )
             }
